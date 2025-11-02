@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
 import keepAlive from "./keep-alive.js";
-import "./server.js"; // Web server Render uchun
+import app from "./server.js"; // Web server Render uchun
 
 const bot = new Telegraf(process.env.bot_token);
 const ADMIN_ID = parseInt(process.env.ADMIN_ID);
@@ -565,7 +565,8 @@ async function loadFromMongoDB() {
 }
 
 // Render uchun webhook URL
-const WEBHOOK_DOMAIN = process.env.RENDER_EXTERNAL_URL || 'https://taklifnoma-h593.onrender.com';
+const WEBHOOK_DOMAIN =
+  process.env.RENDER_EXTERNAL_URL || "https://taklifnoma-h593.onrender.com";
 const WEBHOOK_PATH = `/webhook/${process.env.bot_token}`;
 
 // MongoDB yuklash va botni ishga tushirish
@@ -577,11 +578,11 @@ async function startBot() {
     console.log("📝 Jami javoblar:", Object.keys(responses).length);
 
     // Webhook sozlash
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       await bot.telegram.deleteWebhook({ drop_pending_updates: true });
       await bot.telegram.setWebhook(`${WEBHOOK_DOMAIN}${WEBHOOK_PATH}`);
       console.log("✅ Webhook sozlandi:", WEBHOOK_DOMAIN);
-      
+
       // Express orqali webhook qabul qilish
       app.use(bot.webhookCallback(WEBHOOK_PATH));
       console.log("✅ Bot webhook modeda ishlamoqda");
