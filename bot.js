@@ -522,7 +522,7 @@ async function loadFromMongoDB() {
     // Taklifnomalarni yuklash
     const invs = await Invitation.find().lean();
     console.log(`📥 MongoDB-dan ${invs.length} taklifnoma yuklandi`);
-    
+
     for (const inv of invs) {
       invitations[inv.invId] = inv;
     }
@@ -537,7 +537,7 @@ async function loadFromMongoDB() {
     // Javoblarni yuklash
     const resps = await Response.find().lean();
     console.log(`📥 MongoDB-dan ${resps.length} javob yuklandi`);
-    
+
     for (const resp of resps) {
       if (!responses[resp.invId]) {
         responses[resp.invId] = {};
@@ -556,33 +556,50 @@ async function loadFromMongoDB() {
       saveCurrentToFile(currentInvitation);
     }
 
-    console.log("✅ Ma'lumotlar MongoDB-dan yuklandi va JSON-ga backup qilindi");
+    console.log(
+      "✅ Ma'lumotlar MongoDB-dan yuklandi va JSON-ga backup qilindi"
+    );
   } catch (error) {
     console.log("⚠️ MongoDB-dan yuklashda xato:", error.message);
   }
 }
 
-bot.telegram
-  .deleteWebhook({ drop_pending_updates: true })
-  .then(() => {
-    console.log("✅ Webhook o'chirildi");
-    bot.launch();
-    console.log("✅ Bot ishga tushdi!");
-    console.log("👤 Admin ID:", ADMIN_ID);
-    
-    // MongoDB-dan ma'lumotlarni yuklash
-    setTimeout(async () => {
-      await loadFromMongoDB();
-      console.log("📊 Jami taklifnomalar:", Object.keys(invitations).length);
-      console.log("📝 Jami javoblar:", Object.keys(responses).length);
-    }, 2000); // MongoDB ulanishi uchun 2 soniya kutish
+// Render uchun webhook URL
+const WEBHOOK_DOMAIN = process.env.RENDER_EXTERNAL_URL || 'https://taklifnoma-h593.onrender.com';
+const WEBHOOK_PATH = `/webhook/${process.env.bot_token}`;
 
-    // Render uchun keep-alive
+// MongoDB yuklash va botni ishga tushirish
+async function startBot() {
+  try {
+    // MongoDB-dan ma'lumotlarni yuklash
+    await loadFromMongoDB();
+    console.log("📊 Jami taklifnomalar:", Object.keys(invitations).length);
+    console.log("📝 Jami javoblar:", Object.keys(responses).length);
+
+    // Webhook sozlash
+    if (process.env.NODE_ENV === 'production') {
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      await bot.telegram.setWebhook(`${WEBHOOK_DOMAIN}${WEBHOOK_PATH}`);
+      console.log("✅ Webhook sozlandi:", WEBHOOK_DOMAIN);
+      
+      // Express orqali webhook qabul qilish
+      app.use(bot.webhookCallback(WEBHOOK_PATH));
+      console.log("✅ Bot webhook modeda ishlamoqda");
+    } else {
+      // Lokal uchun polling
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      await bot.launch();
+      console.log("✅ Bot polling modeda ishlamoqda (lokal)");
+    }
+
+    console.log("👤 Admin ID:", ADMIN_ID);
     keepAlive();
-  })
-  .catch((err) => {
-    console.log("❌ Xato:", err.message);
-  });
+  } catch (error) {
+    console.log("❌ Bot ishga tushishda xato:", error.message);
+  }
+}
+
+startBot();
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
