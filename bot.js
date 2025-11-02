@@ -2,13 +2,51 @@ import { Markup, Telegraf } from "telegraf";
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
+import mongoose from "mongoose";
 import keepAlive from "./keep-alive.js";
 import "./server.js"; // Web server Render uchun
 
 const bot = new Telegraf(process.env.bot_token);
 const ADMIN_ID = parseInt(process.env.ADMIN_ID);
 
-// Ma'lumotlar fayllari
+// MongoDB ulanish
+let isMongoConnected = false;
+if (process.env.MONGODB_URI) {
+  mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log("✅ MongoDB ulanish muvaffaqiyatli!");
+      isMongoConnected = true;
+    })
+    .catch((err) => {
+      console.log("❌ MongoDB xato:", err.message);
+      console.log("⚠️ JSON fayl ishlatiladi");
+      isMongoConnected = false;
+    });
+}
+
+// MongoDB Schemas
+const InvitationSchema = new mongoose.Schema({
+  invId: String,
+  message: String,
+  photo: String,
+  videoUrl: String,
+  createdAt: { type: Date, default: Date.now },
+});
+
+const ResponseSchema = new mongoose.Schema({
+  invId: String,
+  userId: Number,
+  response: String,
+  username: String,
+  name: String,
+  timestamp: { type: Date, default: Date.now },
+});
+
+const Invitation = mongoose.model("Invitation", InvitationSchema);
+const Response = mongoose.model("Response", ResponseSchema);
+
+// Ma'lumotlar fayllari (backup uchun)
 const DATA_DIR = "./data";
 const INVITATIONS_FILE = path.join(DATA_DIR, "invitations.json");
 const RESPONSES_FILE = path.join(DATA_DIR, "responses.json");
@@ -19,8 +57,8 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Ma'lumotlarni yuklash
-function loadData() {
+// Ma'lumotlarni yuklash (JSON dan)
+function loadDataFromFile() {
   try {
     const invitations = fs.existsSync(INVITATIONS_FILE)
       ? JSON.parse(fs.readFileSync(INVITATIONS_FILE, "utf8"))
@@ -38,21 +76,33 @@ function loadData() {
   }
 }
 
-// Ma'lumotlarni saqlash
-function saveInvitations(invitations) {
-  fs.writeFileSync(INVITATIONS_FILE, JSON.stringify(invitations, null, 2));
+// Ma'lumotlarni saqlash (JSON ga)
+function saveInvitationsToFile(invitations) {
+  try {
+    fs.writeFileSync(INVITATIONS_FILE, JSON.stringify(invitations, null, 2));
+  } catch (error) {
+    console.log("⚠️ Invitations saqlashda xato:", error.message);
+  }
 }
 
-function saveResponses(responses) {
-  fs.writeFileSync(RESPONSES_FILE, JSON.stringify(responses, null, 2));
+function saveResponsesToFile(responses) {
+  try {
+    fs.writeFileSync(RESPONSES_FILE, JSON.stringify(responses, null, 2));
+  } catch (error) {
+    console.log("⚠️ Responses saqlashda xato:", error.message);
+  }
 }
 
-function saveCurrentInvitation(invitation) {
-  fs.writeFileSync(CURRENT_FILE, JSON.stringify(invitation, null, 2));
+function saveCurrentToFile(invitation) {
+  try {
+    fs.writeFileSync(CURRENT_FILE, JSON.stringify(invitation, null, 2));
+  } catch (error) {
+    console.log("⚠️ Current saqlashda xato:", error.message);
+  }
 }
 
 // Ma'lumotlarni yuklash
-const data = loadData();
+const data = loadDataFromFile();
 const invitations = data.invitations;
 const responses = data.responses;
 let currentInvitation = data.current;
@@ -312,10 +362,20 @@ async function createInvitation(ctx, state) {
   currentInvitation = invitation;
   responses[invId] = {};
 
-  // Ma'lumotlarni saqlash
-  saveInvitations(invitations);
-  saveResponses(responses);
-  saveCurrentInvitation(invitation);
+  // MongoDB ga saqlash
+  if (isMongoConnected) {
+    try {
+      await Invitation.create(invitation);
+      console.log("✅ MongoDB-ga saqlandi:", invId);
+    } catch (error) {
+      console.log("⚠️ MongoDB-ga saqlashda xato:", error.message);
+    }
+  }
+
+  // JSON faylga saqlash (backup)
+  saveInvitationsToFile(invitations);
+  saveResponsesToFile(responses);
+  saveCurrentToFile(invitation);
 
   delete adminStates[ctx.from.id];
 
@@ -361,8 +421,23 @@ bot.action("response_yes", async (ctx) => {
       name: ctx.from.first_name,
     };
 
-    // Ma'lumotlarni saqlash
-    saveResponses(responses);
+    // MongoDB ga saqlash
+    if (isMongoConnected) {
+      try {
+        await Response.create({
+          invId: currentInvitation.invId,
+          userId,
+          response: "yes",
+          username,
+          name: ctx.from.first_name,
+        });
+      } catch (error) {
+        console.log("⚠️ Response saqlashda xato:", error.message);
+      }
+    }
+
+    // JSON ga saqlash
+    saveResponsesToFile(responses);
 
     await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
     await ctx.reply("✅ Rahmat! Sizni kutib qolamiz! 🎉");
@@ -393,8 +468,23 @@ bot.action("response_no", async (ctx) => {
       name: ctx.from.first_name,
     };
 
-    // Ma'lumotlarni saqlash
-    saveResponses(responses);
+    // MongoDB ga saqlash
+    if (isMongoConnected) {
+      try {
+        await Response.create({
+          invId: currentInvitation.invId,
+          userId,
+          response: "no",
+          username,
+          name: ctx.from.first_name,
+        });
+      } catch (error) {
+        console.log("⚠️ Response saqlashda xato:", error.message);
+      }
+    }
+
+    // JSON ga saqlash
+    saveResponsesToFile(responses);
 
     await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
     await ctx.reply("😔 Afsus, ammo vaqt topib keling! Sizni kutib qolamiz!");
