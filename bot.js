@@ -325,9 +325,9 @@ bot.on("text", async (ctx) => {
     // Video kutish holatiga o'tish
     state.step = "enter_video";
   } else if (state.step === "enter_video") {
-    // YouTube link tekshirish
+    // YouTube link tekshirish - BARCHA formatlar
     const youtubeRegex =
-      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/)?([a-zA-Z0-9_-]{11})/;
     const match = text.match(youtubeRegex);
 
     if (match) {
@@ -338,7 +338,9 @@ bot.on("text", async (ctx) => {
         "❌ Noto'g'ri YouTube link!\n\n" +
           "To'g'ri format:\n" +
           "• https://youtube.com/watch?v=abc123\n" +
-          "• https://youtu.be/abc123\n\n" +
+          "• https://youtu.be/abc123\n" +
+          "• https://youtube.com/shorts/abc123\n" +
+          "• https://m.youtube.com/watch?v=abc123\n\n" +
           "Qaytadan yuboring yoki 'O'tkazib yuborish' tugmasini bosing."
       );
     }
