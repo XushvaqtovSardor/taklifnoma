@@ -1,0 +1,195 @@
+# 🚀 TELEGRAM BOTNI TEKIN SERVERGA CHIQARISH
+
+## 📋 USUL 1: RENDER.COM (ENG OSON)
+
+### 1-QADAM: GitHub Account va Repository
+```bash
+# Git repository yaratish
+cd /d/N25_2/taklifnoma
+git init
+git add .
+git commit -m "Wedding bot initial commit"
+
+# GitHub-ga push qilish (avval GitHub-da repository yarating)
+git remote add origin https://github.com/USERNAME/wedding-bot.git
+git branch -M main
+git push -u origin main
+```
+
+### 2-QADAM: Render.com-ga ro'yxatdan o'tish
+1. https://render.com ga kiring
+2. "Sign Up" ni bosing
+3. GitHub bilan ro'yxatdan o'ting
+
+### 3-QADAM: Web Service yaratish
+1. Dashboard → "New" → "Web Service"
+2. GitHub repository-ni tanlang (wedding-bot)
+3. Sozlamalar:
+   - **Name:** wedding-bot
+   - **Environment:** Node
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+   - **Instance Type:** Free
+
+### 4-QADAM: Environment Variables qo'shish
+1. "Environment" bo'limiga o'ting
+2. Quyidagilarni qo'shing:
+   ```
+   bot_token = 8427364945:AAEASC2q6omfeyoytx0JY4MNp8YzvLrO5ig
+   ADMIN_ID = 6652831703
+   ```
+
+### 5-QADAM: Deploy qilish
+1. "Create Web Service" ni bosing
+2. 2-3 daqiqa kutib turing
+3. ✅ Bot avtomatik ishga tushadi!
+
+---
+
+## 📋 USUL 2: RAILWAY.APP
+
+### 1-QADAM: Railway.app-ga kirish
+1. https://railway.app ga kiring
+2. GitHub bilan ro'yxatdan o'ting
+3. Free plan: $5/oy kredit (500 soat)
+
+### 2-QADAM: Deploy
+1. "New Project" → "Deploy from GitHub repo"
+2. Repository tanlang
+3. Environment Variables qo'shing:
+   ```
+   bot_token = 8427364945:AAEASC2q6omfeyoytx0JY4MNp8YzvLrO5ig
+   ADMIN_ID = 6652831703
+   ```
+4. Deploy tugmasini bosing
+
+---
+
+## 📋 USUL 3: GLITCH.COM
+
+### 1-QADAM: Glitch-ga kirish
+1. https://glitch.com ga kiring
+2. "New Project" → "Import from GitHub"
+
+### 2-QADAM: .env faylni sozlash
+1. `.env` faylni oching
+2. Quyidagilarni yozing:
+   ```
+   bot_token=8427364945:AAEASC2q6omfeyoytx0JY4MNp8YzvLrO5ig
+   ADMIN_ID=6652831703
+   ```
+
+### 3-QADAM: package.json-ni tekshirish
+```json
+{
+  "scripts": {
+    "start": "node bot.js"
+  }
+}
+```
+
+---
+
+## 📋 USUL 4: VERCEL (Webhook kerak)
+
+⚠️ Vercel serverless, polling ishlamaydi. Webhook kerak:
+
+### bot.js-ni webhook uchun o'zgartirish:
+```javascript
+import { Telegraf } from 'telegraf';
+import express from 'express';
+
+const bot = new Telegraf(process.env.bot_token);
+const app = express();
+
+// Bot kodingiz...
+
+// Webhook endpoint
+app.use(await bot.createWebhook({ domain: process.env.VERCEL_URL }));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+---
+
+## ✅ ENG YAXSHI TANLOV: RENDER.COM
+
+**Nima uchun?**
+- ✅ 100% tekin
+- ✅ 750 soat/oy (yetarli)
+- ✅ Avtomatik restart
+- ✅ GitHub-dan avtomatik deploy
+- ✅ Polling ishlaydi (webhook kerak emas)
+- ✅ Oson sozlash
+
+---
+
+## 🎯 QISQA YO'L (Render.com uchun):
+
+1. **GitHub-ga kodni yuklang:**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/USERNAME/wedding-bot.git
+   git push -u origin main
+   ```
+
+2. **Render.com-ga kiring:** https://render.com
+   - Sign Up with GitHub
+
+3. **New Web Service yarating:**
+   - Repository: wedding-bot
+   - Build: `npm install`
+   - Start: `npm start`
+   - Type: Free
+
+4. **Environment Variables:**
+   - `bot_token` = sizning bot tokeningiz
+   - `ADMIN_ID` = sizning Telegram ID
+
+5. **Deploy!** ✅
+
+---
+
+## 📞 QANDAY TEKSHIRISH:
+
+Bot deploy bo'lgandan keyin:
+1. Telegram-da `/start` yuboring
+2. Admin panel ko'rinishi kerak
+3. Taklifnoma yarating va test qiling
+
+---
+
+## 🔄 YANGILANISHLAR:
+
+Render.com GitHub bilan bog'langan, har safar kod o'zgarsa avtomatik deploy bo'ladi:
+```bash
+git add .
+git commit -m "Yangi o'zgarish"
+git push
+```
+
+---
+
+## ❓ MUAMMOLAR:
+
+**Bot ishlamasa:**
+1. Render logs-ni tekshiring
+2. Environment variables to'g'ri yozilganini tekshiring
+3. Bot token to'g'rimi?
+4. ADMIN_ID to'g'rimi?
+
+**Loglarni ko'rish:**
+Render Dashboard → wedding-bot → Logs
+
+---
+
+## 💡 MASLAHAT:
+
+- Render free plan-da bot 15 daqiqa faoliyatsiz bo'lsa uxlaydi
+- Birinchi request-da 30 soniya uyg'onadi
+- 24/7 ishlashi uchun: https://uptimerobot.com ga kron job qo'ying
