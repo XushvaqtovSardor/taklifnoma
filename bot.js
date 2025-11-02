@@ -511,6 +511,57 @@ bot.action("response_no", async (ctx) => {
 // Botni ishga tushirish
 // ========================================
 
+// MongoDB-dan ma'lumotlarni yuklash
+async function loadFromMongoDB() {
+  if (!isMongoConnected) {
+    console.log("⚠️ MongoDB ulanmagan, JSON ishlatiladi");
+    return;
+  }
+
+  try {
+    // Taklifnomalarni yuklash
+    const invs = await Invitation.find().lean();
+    console.log(`📥 MongoDB-dan ${invs.length} taklifnoma yuklandi`);
+    
+    for (const inv of invs) {
+      invitations[inv.invId] = inv;
+    }
+
+    // Eng oxirgi taklifnomani current qilish
+    if (invs.length > 0) {
+      const lastInv = invs[invs.length - 1];
+      currentInvitation = lastInv;
+      console.log(`✅ Joriy taklifnoma: ${lastInv.invId}`);
+    }
+
+    // Javoblarni yuklash
+    const resps = await Response.find().lean();
+    console.log(`📥 MongoDB-dan ${resps.length} javob yuklandi`);
+    
+    for (const resp of resps) {
+      if (!responses[resp.invId]) {
+        responses[resp.invId] = {};
+      }
+      responses[resp.invId][resp.userId] = {
+        response: resp.response,
+        username: resp.username,
+        name: resp.name,
+      };
+    }
+
+    // JSON ga backup saqlash
+    saveInvitationsToFile(invitations);
+    saveResponsesToFile(responses);
+    if (currentInvitation) {
+      saveCurrentToFile(currentInvitation);
+    }
+
+    console.log("✅ Ma'lumotlar MongoDB-dan yuklandi va JSON-ga backup qilindi");
+  } catch (error) {
+    console.log("⚠️ MongoDB-dan yuklashda xato:", error.message);
+  }
+}
+
 bot.telegram
   .deleteWebhook({ drop_pending_updates: true })
   .then(() => {
@@ -518,8 +569,13 @@ bot.telegram
     bot.launch();
     console.log("✅ Bot ishga tushdi!");
     console.log("👤 Admin ID:", ADMIN_ID);
-    console.log("📊 Mavjud taklifnomalar:", Object.keys(invitations).length);
-    console.log("📝 Mavjud javoblar:", Object.keys(responses).length);
+    
+    // MongoDB-dan ma'lumotlarni yuklash
+    setTimeout(async () => {
+      await loadFromMongoDB();
+      console.log("📊 Jami taklifnomalar:", Object.keys(invitations).length);
+      console.log("📝 Jami javoblar:", Object.keys(responses).length);
+    }, 2000); // MongoDB ulanishi uchun 2 soniya kutish
 
     // Render uchun keep-alive
     keepAlive();
