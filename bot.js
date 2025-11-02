@@ -515,6 +515,17 @@ bot.action("response_no", async (ctx) => {
 
 // MongoDB-dan ma'lumotlarni yuklash
 async function loadFromMongoDB() {
+  // Avval JSON-dan yuklash (backup)
+  console.log("📂 JSON fayldan ma'lumotlarni yuklash...");
+  const jsonData = loadDataFromFile();
+  Object.assign(invitations, jsonData.invitations);
+  Object.assign(responses, jsonData.responses);
+  if (jsonData.current) {
+    currentInvitation = jsonData.current;
+    console.log(`✅ JSON-dan ${Object.keys(invitations).length} taklifnoma yuklandi`);
+  }
+
+  // Agar MongoDB ulangan bo'lsa, undan ham yuklash
   if (!isMongoConnected) {
     console.log("⚠️ MongoDB ulanmagan, JSON ishlatiladi");
     return;
@@ -525,12 +536,13 @@ async function loadFromMongoDB() {
     const invs = await Invitation.find().lean();
     console.log(`📥 MongoDB-dan ${invs.length} taklifnoma yuklandi`);
 
-    for (const inv of invs) {
-      invitations[inv.invId] = inv;
-    }
-
-    // Eng oxirgi taklifnomani current qilish
     if (invs.length > 0) {
+      // MongoDB ma'lumotlari JSON-dan ustunroq
+      for (const inv of invs) {
+        invitations[inv.invId] = inv;
+      }
+
+      // Eng oxirgi taklifnomani current qilish
       const lastInv = invs[invs.length - 1];
       currentInvitation = lastInv;
       console.log(`✅ Joriy taklifnoma: ${lastInv.invId}`);
@@ -563,6 +575,7 @@ async function loadFromMongoDB() {
     );
   } catch (error) {
     console.log("⚠️ MongoDB-dan yuklashda xato:", error.message);
+    console.log("✅ JSON ma'lumotlari ishlatiladi");
   }
 }
 

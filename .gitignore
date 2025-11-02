@@ -1,6 +1,5 @@
 node_modules/
 .env
-data/
 bot_old_backup.js
 test_bot.js
 bot_simple.js
