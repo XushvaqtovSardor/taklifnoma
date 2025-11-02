@@ -315,11 +315,15 @@ bot.on("text", async (ctx) => {
 
     ctx.reply(
       "🎥 YouTube video linkini qo'shmoqchimisiz?\n\n" +
-        "Link yuborish yoki O'tkazib yuborish tugmasini bosing:",
+        "✅ Video link yuboring (masalan: https://youtu.be/abc123)\n" +
+        "❌ Yoki 'O'tkazib yuborish' tugmasini bosing",
       Markup.inlineKeyboard([
         [Markup.button.callback("⏭️ O'tkazib yuborish", "skip_video")],
       ])
     );
+
+    // Video kutish holatiga o'tish
+    state.step = "enter_video";
   } else if (state.step === "enter_video") {
     // YouTube link tekshirish
     const youtubeRegex =
@@ -331,7 +335,11 @@ bot.on("text", async (ctx) => {
       await createInvitation(ctx, state);
     } else {
       ctx.reply(
-        "❌ Noto'g'ri YouTube link! Qaytadan yuboring yoki O'tkazib yuborish tugmasini bosing."
+        "❌ Noto'g'ri YouTube link!\n\n" +
+          "To'g'ri format:\n" +
+          "• https://youtube.com/watch?v=abc123\n" +
+          "• https://youtu.be/abc123\n\n" +
+          "Qaytadan yuboring yoki 'O'tkazib yuborish' tugmasini bosing."
       );
     }
   }
@@ -342,7 +350,7 @@ bot.action("skip_video", async (ctx) => {
   await ctx.answerCbQuery();
   const state = adminStates[ADMIN_ID];
 
-  if (state && state.step === "ask_video") {
+  if (state && (state.step === "ask_video" || state.step === "enter_video")) {
     await createInvitation(ctx, state);
   }
 });
